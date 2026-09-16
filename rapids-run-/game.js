@@ -235,6 +235,10 @@ let playerName = '';
 
 let run = null; // built when a PLAY run starts
 
+const bgMusic = new Audio('assets/audio/theme.mp3');
+bgMusic.loop = true;
+bgMusic.volume = 0.5;
+
 function buildRun() {
   const pool = COMPANIES.slice();
   for (let i = pool.length - 1; i > 0; i--) {
@@ -314,6 +318,8 @@ function startRun() {
   playerName = raw.length > 0 ? raw : 'Anonymous';
   run = newRunState();
   initRiverBackground();
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(() => {});
   showScreen('play');
   lastFrameTime = performance.now();
   requestAnimationFrame(loop);
@@ -322,6 +328,7 @@ function startRun() {
 function endRun(outcome) {
   if (run.ended) return;
   run.ended = true;
+  bgMusic.pause();
   run.outcome = outcome;
   playSound(outcome === 'win' ? 'good' : 'hit');
   renderResultsSummary(outcome);
