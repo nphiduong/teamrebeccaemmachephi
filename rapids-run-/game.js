@@ -53,54 +53,46 @@ function initRiverBackground() {
   }
 }
 
-// ---- Company logos (placeholder pool: only some companies have real logo assets so far,
-// assigned randomly per card until every company has its own matching logo asset). ----
-const LOGO_FILES = [
-  'Adobe.png',
-  'Anthropic.png',
-  'Apple.png',
-  'ASML.png',
-  'Bernie Madoff Investment Securities.jpg',
-  'Costco.png',
-  'Enron.png',
-  'ftx.png',
-  'Google (Alphabet).png',
-  'ikea.png',
-  'Intel.png',
-  'lehman brothers.png',
-  'LEGO.png',
-  'lvmh.png',
-  'Mastercard.svg',
-  'Microsoft.png',
-  'Netflix.png',
-  'nike.png',
-  'Nortel networks.png',
-  'novo nordisk.png',
-  'Nvidia.png',
-  'Parmalat.png',
-  'patagonia.png',
-  'Personio.png',
-  'SAP.png',
-  'Salesforce.png',
-  'Siemens.jpg',
-  'spotify.png',
-  'Theranos.png',
-  'Toyota.png',
-  'unilever.jpg',
-  'visa.jpg',
-  'wirecard.png',
-  'worldcom.png',
-];
-const logoImages = LOGO_FILES.map((file) => {
-  const img = new Image();
-  img.ready = false;
-  img.onload = () => { img.ready = true; };
-  img.src = `assets/logos/${encodeURIComponent(file)}`;
-  return img;
-});
+// ---- Company logos (real per-company matches only; a company with no matching
+// asset in assets/logos/ just shows its name, no logo). ----
+const COMPANY_LOGO_FILES = {
+  'Anthropic': 'Anthropic.png',
+  'Personio': 'Personio.png',
+  'Apple': 'Apple.png',
+  'Microsoft': 'Microsoft.png',
+  'Nvidia': 'Nvidia.png',
+  'Spotify': 'spotify.png',
+  'Costco': 'Costco.png',
+  'Patagonia': 'patagonia.png',
+  'Salesforce': 'Salesforce.png',
+  'Google (Alphabet)': 'Google (Alphabet).png',
+  'ASML': 'ASML.png',
+  'Visa': 'visa.jpg',
+  'Novo Nordisk': 'novo nordisk.png',
+  'Siemens': 'Siemens.jpg',
+  'Lego': 'LEGO.png',
+  'Wirecard': 'wirecard.png',
+  'Enron': 'Enron.png',
+  'Lehman Brothers': 'lehman brothers.png',
+  'FTX': 'ftx.png',
+  'Theranos': 'Theranos.png',
+  'Bernie Madoff Investment': 'Bernie Madoff Investment Securities.jpg',
+  'WorldCom': 'worldcom.png',
+  'Parmalat': 'Parmalat.png',
+};
 
-function randomLogo() {
-  return logoImages[Math.floor(Math.random() * logoImages.length)];
+const logoImageCache = {};
+function getCompanyLogo(companyName) {
+  const file = COMPANY_LOGO_FILES[companyName];
+  if (!file) return null;
+  if (!logoImageCache[file]) {
+    const img = new Image();
+    img.ready = false;
+    img.onload = () => { img.ready = true; };
+    img.src = `assets/logos/${encodeURIComponent(file)}`;
+    logoImageCache[file] = img;
+  }
+  return logoImageCache[file];
 }
 
 // ---- Raft sprite (real art asset; falls back to procedural pixel raft if it can't load) ----
@@ -211,7 +203,7 @@ function buildRun() {
       }
     }
 
-    const companiesWithLogos = picks.map((c) => ({ ...c, logo: randomLogo() }));
+    const companiesWithLogos = picks.map((c) => ({ ...c, logo: getCompanyLogo(c.name) }));
     gates.push({
       time: GATE_TIMES[g],
       approachWindow: GATE_APPROACH_WINDOWS[g],
