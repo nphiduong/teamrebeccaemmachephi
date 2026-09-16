@@ -22,7 +22,7 @@ const COMPANIES = [
   { "name": "Duolingo", "type": "good", "points": 400, "category": "EdTech" },
   { "name": "OpenAI", "type": "good", "points": 450, "category": "Tech / AI" },
   { "name": "Visa", "type": "good", "points": 350, "category": "Financial Services" },
-  { "name": "Novo Nordisk", "type": "bad", "points": -100, "category": "Pharma" },
+  { "name": "Novo Nordisk", "type": "good", "points": 150, "category": "Pharma" },
   { "name": "Siemens", "type": "good", "points": 300, "category": "Industrial" },
   { "name": "Hubspot", "type": "good", "points": 150, "category": "Software" },
   { "name": "AirBnB", "type": "good", "points": 300, "category": "Hospitality" },
