@@ -7,18 +7,9 @@ const RAFT_Y = 620;
 const GATE_SPAWN_Y = 70;
 const APPROACH_WINDOW = 3.2; // seconds a gate is visible before it resolves
 
-// ---- Low-angle rear-view perspective ----
-// Lanes converge to a single vanishing point (CENTER_X, GATE_SPAWN_Y) and reach
-// full LANE_X spread at PERSPECTIVE_BASE_Y (where gate cards arrive). Anything
-// drawn at a given y — gate cards, lane dividers, riverbanks — shares this one
-// formula so the whole scene reads as one consistent rear-view perspective.
-const CENTER_X = CANVAS_W / 2;
+// Depth reference for the riverbank taper: banks narrow toward the horizon and
+// reach full width by the time they're level with where gate items arrive.
 const PERSPECTIVE_BASE_Y = RAFT_Y - 90;
-
-function perspectiveX(baseX, y) {
-  const t = (y - GATE_SPAWN_Y) / (PERSPECTIVE_BASE_Y - GATE_SPAWN_Y);
-  return CENTER_X + (baseX - CENTER_X) * t;
-}
 
 // 12 round-intervals: starts at 4s and shrinks by 0.25s each round (4 -> 1.25).
 const ROUND_DURATIONS = [4, 3.75, 3.5, 3.25, 3, 2.75, 2.5, 2.25, 2, 1.75, 1.5, 1.25];
@@ -62,7 +53,17 @@ let rippleStreaks = [];
 function initRiverBackground() {
   riverBanks = [];
   for (let y = -60; y <= CANVAS_H + 60; y += 42) {
-    riverBanks.push({ y, phase: y * 0.01 });
+    riverBanks.push({
+      y,
+      phase: y * 0.01,
+      // Stable per-node bush texture (generated once, not re-randomized every
+      // frame) so the lush foliage detail doesn't flicker as the bank scrolls.
+      bushes: Array.from({ length: 4 }, () => ({
+        f: Math.random(), // 0..1 fraction across the bank's own width
+        dy: Math.random() * 30,
+        r: Math.random() * 4 + 3,
+      })),
+    });
   }
   rippleStreaks = [];
   for (let i = 0; i < 40; i++) {
@@ -323,9 +324,9 @@ function endRun(outcome) {
   run.ended = true;
   run.outcome = outcome;
   playSound(outcome === 'win' ? 'good' : 'hit');
-  saveScore(playerName, selectedCharacter, run.score);
-  renderResults(outcome);
+  renderResultsSummary(outcome);
   showScreen('results');
+  submitAndRenderLeaderboard(); // async: shows the summary immediately, rows fill in once the network call resolves
 }
 
 // ---- Input ----
@@ -360,6 +361,22 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('play-again-btn').addEventListener('click', () => { if (appState === 'RESULTS') goTitle(); });
+
+// If the player closes/navigates away mid-run, log whatever score they had —
+// pagehide (not beforeunload) plus sendBeacon are the reliable way to get a
+// write out during teardown, since a normal fetch() isn't guaranteed to finish.
+window.addEventListener('pagehide', () => {
+  if (appState !== 'PLAY' || !run || run.ended) return;
+  const characterName = CHARACTERS[selectedCharacter].name;
+  saveLocalScore(playerName, characterName, run.score);
+  if (LEADERBOARD_API_URL && navigator.sendBeacon) {
+    const blob = new Blob(
+      [JSON.stringify({ name: playerName, score: run.score, character: characterName })],
+      { type: 'text/plain;charset=utf-8' }
+    );
+    navigator.sendBeacon(LEADERBOARD_API_URL, blob);
+  }
+});
 
 // ---- Game loop ----
 let lastFrameTime = 0;
@@ -397,9 +414,9 @@ function update(dt) {
   run.splashes = run.splashes.filter(p => p.life > 0);
 
   rippleStreaks.forEach((r) => {
-    r.y += r.speed * dt;
-    if (r.y > CANVAS_H + 20) {
-      r.y = -20;
+    r.y -= r.speed * dt;
+    if (r.y < -20 - r.length) {
+      r.y = CANVAS_H + 20;
       r.x = BANK_MARGIN + 20 + Math.random() * (CANVAS_W - 2 * (BANK_MARGIN + 20));
     }
   });
@@ -410,11 +427,8 @@ function update(dt) {
     }
   }
 
-  if (run.score <= 0) {
-    run.score = Math.min(run.score, 0);
-    endRun('loss');
-  } else if (run.gatesCleared >= TOTAL_GATES) {
-    endRun('win');
+  if (run.gatesCleared >= TOTAL_GATES) {
+    endRun(run.score > 0 ? 'win' : 'loss');
   }
 }
 
@@ -469,7 +483,6 @@ function render() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
 
   drawRiverBackground();
-  drawLaneDividers();
   drawGates();
   drawRaft();
   drawSplashes();
@@ -496,15 +509,29 @@ function drawRiverBackground() {
     const leftW = margin + sway;
     const rightW = margin - sway;
 
-    // Grass
-    ctx.fillStyle = '#2e8b57';
+    // Grass — deep, saturated green base
+    ctx.fillStyle = '#1f7a3d';
     ctx.fillRect(0, y, leftW, 38);
     ctx.fillRect(CANVAS_W - rightW, y, rightW, 38);
 
     // Sunlit grass edge
-    ctx.fillStyle = '#3cb371';
+    ctx.fillStyle = '#4cbf6b';
     ctx.fillRect(0, y, leftW, 7);
     ctx.fillRect(CANVAS_W - rightW, y, rightW, 7);
+
+    // Scattered bush clumps for a denser, lusher look
+    ctx.fillStyle = '#134d29';
+    node.bushes.forEach((b) => {
+      const r = b.r * (0.3 + 0.7 * t);
+      if (r < 0.5) return;
+      const by = y + 8 + b.dy * t;
+      ctx.beginPath();
+      ctx.arc(b.f * Math.max(0, leftW - 6) + 3, by, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(CANVAS_W - (b.f * Math.max(0, rightW - 6) + 3), by, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
 
     // Warm earth-toned rocky trim at the waterline
     ctx.fillStyle = '#8a5a34';
@@ -522,23 +549,6 @@ function drawRiverBackground() {
   });
 }
 
-function drawLaneDividers() {
-  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-  ctx.lineWidth = 3;
-  ctx.setLineDash([18, 16]);
-  ctx.lineDashOffset = -((run.t * 220) % 34);
-  // Boundaries between lanes, converging to the vanishing point at the horizon
-  // and diverging past the raft's row toward the bottom of the screen.
-  [480, 800].forEach((boundaryX) => {
-    ctx.beginPath();
-    ctx.moveTo(perspectiveX(boundaryX, GATE_SPAWN_Y), GATE_SPAWN_Y);
-    ctx.lineTo(perspectiveX(boundaryX, CANVAS_H), CANVAS_H);
-    ctx.stroke();
-  });
-  ctx.setLineDash([]);
-  ctx.lineDashOffset = 0;
-}
-
 function drawGates() {
   for (const gate of run.gates) {
     if (gate.resolved) continue;
@@ -546,8 +556,12 @@ function drawGates() {
     if (timeToGate > gate.approachWindow || timeToGate < -0.05) continue;
 
     const progress = 1 - Math.max(0, timeToGate) / gate.approachWindow;
-    const y = GATE_SPAWN_Y + (RAFT_Y - 90 - GATE_SPAWN_Y) * progress;
-    const scale = 0.55 + 0.45 * progress;
+    // Ease in: real perspective growth is slow-then-fast as distance closes,
+    // not linear — linear growth reads as "flying at you" instead of "you're
+    // approaching a stationary object."
+    const eased = progress * progress;
+    const y = GATE_SPAWN_Y + (RAFT_Y - 90 - GATE_SPAWN_Y) * eased;
+    const scale = 0.2 + 0.8 * eased;
 
     gate.companies.forEach((company, lane) => {
       // Company items stay in their own fixed lane the whole time — only the
@@ -776,8 +790,13 @@ function drawHud() {
   ctx.restore();
 }
 
-// ---- Leaderboard (localStorage; swap for Apps Script fetch/post later) ----
-function loadLeaderboard() {
+// ---- Leaderboard ----
+// Local copy always kept (and used as-is if no backend is configured, or if
+// the network call fails). Paste a deployed Apps Script Web App /exec URL
+// below to also read/write a shared, permanent leaderboard.
+const LEADERBOARD_API_URL = '';
+
+function loadLocalLeaderboard() {
   try {
     return JSON.parse(localStorage.getItem(LEADERBOARD_KEY)) || [];
   } catch (e) {
@@ -785,40 +804,81 @@ function loadLeaderboard() {
   }
 }
 
-function saveScore(name, character, score) {
-  const board = loadLeaderboard();
+function saveLocalScore(name, character, score) {
+  const board = loadLocalLeaderboard();
   board.push({ name, character, score, timestamp: Date.now() });
   board.sort((a, b) => b.score - a.score || a.timestamp - b.timestamp);
   localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(board.slice(0, 200)));
 }
 
-function renderResults(outcome) {
+async function saveScore(name, character, score) {
+  saveLocalScore(name, character, score);
+  if (!LEADERBOARD_API_URL) return;
+  try {
+    await fetch(LEADERBOARD_API_URL, {
+      method: 'POST',
+      // text/plain avoids a CORS preflight, which Apps Script Web Apps don't handle.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ name, score, character }),
+    });
+  } catch (e) {
+    console.warn('Leaderboard sync failed, score kept locally only:', e);
+  }
+}
+
+async function fetchLeaderboard() {
+  if (!LEADERBOARD_API_URL) return loadLocalLeaderboard();
+  try {
+    const res = await fetch(LEADERBOARD_API_URL);
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.warn('Leaderboard fetch failed, showing local scores only:', e);
+    return loadLocalLeaderboard();
+  }
+}
+
+function renderResultsSummary(outcome) {
   document.getElementById('results-headline').textContent =
     outcome === 'win' ? 'You Win! River Cleared.' : 'PR Disaster! Run Over.';
   document.getElementById('results-score').textContent = run.score;
   document.getElementById('results-meta').textContent =
     `${playerName} · ${CHARACTERS[selectedCharacter].name}`;
+}
 
-  const board = loadLeaderboard();
+async function submitAndRenderLeaderboard() {
+  const characterName = CHARACTERS[selectedCharacter].name;
+  await saveScore(playerName, characterName, run.score);
+  const board = await fetchLeaderboard();
+  renderLeaderboardRows(board, characterName);
+}
+
+function renderLeaderboardRows(board, characterName) {
   const top = board.slice(0, LEADERBOARD_ROW_Y_PERCENTS.length);
 
   const rowsContainer = document.getElementById('leaderboard-rows');
   rowsContainer.innerHTML = '';
-  top.forEach((entry, i) => {
+  LEADERBOARD_ROW_Y_PERCENTS.forEach((yPercent, i) => {
+    const entry = top[i];
     const row = document.createElement('div');
     row.className = 'lb-row';
-    row.style.top = `${LEADERBOARD_ROW_Y_PERCENTS[i]}%`;
-
-    const isYou = entry.name === playerName && entry.score === run.score && entry.character === selectedCharacter;
-    if (isYou) row.classList.add('is-you');
+    row.style.top = `${yPercent}%`;
 
     const nameEl = document.createElement('span');
-    nameEl.className = 'lb-name';
-    nameEl.textContent = entry.name;
-
     const scoreEl = document.createElement('span');
-    scoreEl.className = 'lb-score';
-    scoreEl.textContent = entry.score;
+
+    if (entry) {
+      const isYou = entry.name === playerName && entry.score === run.score && entry.character === characterName;
+      if (isYou) row.classList.add('is-you');
+      nameEl.className = 'lb-name';
+      nameEl.textContent = entry.name;
+      scoreEl.className = 'lb-score';
+      scoreEl.textContent = entry.score;
+    } else {
+      // No entry for this rank yet — mask the baked underscore placeholder.
+      nameEl.className = 'lb-name lb-empty-mask';
+      scoreEl.className = 'lb-score lb-empty-mask';
+    }
 
     row.appendChild(nameEl);
     row.appendChild(scoreEl);

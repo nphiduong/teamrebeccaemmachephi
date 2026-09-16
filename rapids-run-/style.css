@@ -265,21 +265,28 @@ label[for="player-name"] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  background: #e6cc9c;
   padding: 3px 6px;
   border-radius: 3px;
 }
 
 .lb-row .lb-name {
-  left: 31%;
-  width: 33%;
+  left: 24%;
+  width: 38%;
   text-align: left;
+  background: transparent;
 }
 
 .lb-row .lb-score {
   left: 65%;
   width: 18%;
   text-align: center;
+  background: #e6cc9c;
+}
+
+/* Empty rank slots (no leaderboard entry yet): mask the baked-in underscore
+   placeholder in both columns instead of leaving it showing. */
+.lb-row .lb-empty-mask {
+  background: #e6cc9c;
 }
 
 .lb-row.is-you .lb-name,
