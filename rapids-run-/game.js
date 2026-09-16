@@ -23,6 +23,12 @@ const STEER_LERP = 10; // higher = snappier smoothing toward target lane
 const DODGE_DURATION = 1;
 const DODGE_COOLDOWN = 1.5;
 
+// Vertical position (% of the leaderboard image's own box) of each rank row's
+// blank line, read off assets/ui/Leaderboard.jpeg. The baked artwork already
+// prints "#1".."#10" correctly at these slots (its 5th row duplicates "#4",
+// so that slot is skipped here) — we only need to overlay name + score.
+const LEADERBOARD_ROW_Y_PERCENTS = [26.6, 31.8, 37.0, 42.1, 52.5, 57.7, 62.9, 68.0, 73.2, 78.4];
+
 const CHARACTERS = [
   { name: 'Blue Rafter', color: '#4da8ff', accent: '#1f6fae' },
   { name: 'Red Rafter', color: '#ff5d5d', accent: '#b23232' },
@@ -721,29 +727,30 @@ function renderResults(outcome) {
     `${playerName} · ${CHARACTERS[selectedCharacter].name}`;
 
   const board = loadLeaderboard();
-  const top = board.slice(0, 10);
+  const top = board.slice(0, LEADERBOARD_ROW_Y_PERCENTS.length);
 
-  let rank = 0;
-  let lastScore = null;
-  const body = document.getElementById('leaderboard-body');
-  body.innerHTML = '';
-  top.forEach((entry) => {
-    if (entry.score !== lastScore) {
-      rank += 1;
-      lastScore = entry.score;
-    }
-    const row = document.createElement('tr');
+  const rowsContainer = document.getElementById('leaderboard-rows');
+  rowsContainer.innerHTML = '';
+  top.forEach((entry, i) => {
+    const row = document.createElement('div');
+    row.className = 'lb-row';
+    row.style.top = `${LEADERBOARD_ROW_Y_PERCENTS[i]}%`;
+
     const isYou = entry.name === playerName && entry.score === run.score && entry.character === selectedCharacter;
     if (isYou) row.classList.add('is-you');
-    row.innerHTML = `<td>${rank}</td><td>${escapeHtml(entry.name)}</td><td>${entry.score}</td>`;
-    body.appendChild(row);
-  });
-}
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
+    const nameEl = document.createElement('span');
+    nameEl.className = 'lb-name';
+    nameEl.textContent = entry.name;
+
+    const scoreEl = document.createElement('span');
+    scoreEl.className = 'lb-score';
+    scoreEl.textContent = entry.score;
+
+    row.appendChild(nameEl);
+    row.appendChild(scoreEl);
+    rowsContainer.appendChild(row);
+  });
 }
 
 // ---- Boot ----

@@ -20,16 +20,16 @@
   </section>
 
   <section id="screen-results" class="screen">
-    <h2 id="results-headline">Run Complete</h2>
-    <p id="results-score" class="results-score">0</p>
-    <p id="results-meta"></p>
+    <div id="results-summary">
+      <h2 id="results-headline">Run Complete</h2>
+      <p id="results-score" class="results-score">0</p>
+      <p id="results-meta"></p>
+    </div>
 
-    <table id="leaderboard-table">
-      <thead>
-        <tr><th>Rank</th><th>Name</th><th>Score</th></tr>
-      </thead>
-      <tbody id="leaderboard-body"></tbody>
-    </table>
+    <div id="leaderboard-frame">
+      <img src="assets/ui/Leaderboard.jpeg" alt="Global leaderboard" id="leaderboard-bg">
+      <div id="leaderboard-rows"></div>
+    </div>
 
     <button id="play-again-btn" class="prompt pulsing" style="cursor:pointer;background:none;border:none;">Press ENTER to play again</button>
   </section>

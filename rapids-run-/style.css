@@ -201,40 +201,79 @@ label[for="player-name"] {
 .swatch-1 { background: #ff5d5d; }
 .swatch-2 { background: #4ddb8c; }
 
+#results-summary {
+  margin-bottom: 10px;
+}
+
+#results-headline {
+  font-size: 26px;
+  margin: 0 0 6px;
+}
+
 .results-score {
   font-family: 'Press Start 2P', cursive, -apple-system, sans-serif;
-  font-size: 34px;
+  font-size: 28px;
   color: #7fd8ff;
-  margin: 0 0 16px;
+  margin: 0 0 6px;
 }
 
 #results-meta {
   color: #b7cbdb;
-  margin-bottom: 28px;
+  margin-bottom: 0;
 }
 
-#leaderboard-table {
-  border-collapse: collapse;
-  width: 420px;
-  margin-bottom: 32px;
+#leaderboard-frame {
+  position: relative;
+  margin: 0 auto 16px;
 }
 
-#leaderboard-table th, #leaderboard-table td {
-  padding: 6px 14px;
+#leaderboard-bg {
+  display: block;
+  height: 480px;
+  width: auto;
+  max-width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+#leaderboard-rows {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.lb-row {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  transform: translateY(-50%);
+}
+
+.lb-row .lb-name,
+.lb-row .lb-score {
+  position: absolute;
+  font-family: 'Press Start 2P', cursive, monospace;
+  font-size: 11px;
+  color: #241708;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-row .lb-name {
+  left: 31%;
+  width: 40%;
   text-align: left;
-  border-bottom: 1px solid #1e3a4f;
-  font-size: 15px;
 }
 
-#leaderboard-table th {
-  color: #8fa8ba;
-  font-weight: normal;
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 1px;
+.lb-row .lb-score {
+  left: 72%;
+  width: 17%;
+  text-align: center;
 }
 
-#leaderboard-table tr.is-you td {
-  color: #ffd76a;
-  font-weight: bold;
+.lb-row.is-you .lb-name,
+.lb-row.is-you .lb-score {
+  color: #a4390a;
+  text-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
 }
