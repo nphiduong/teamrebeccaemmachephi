@@ -354,17 +354,19 @@ function resolveGate(gate) {
   run.score += pointsApplied;
 
   const label = dodged
-    ? `DODGED ${company.name}`
+    ? `${company.points} ${company.name}`
     : `${pointsApplied > 0 ? '+' : ''}${pointsApplied} ${company.name}`;
+  const sub = dodged ? `DODGED — ${company.category}` : company.category;
   const color = dodged ? '#ffd76a' : (pointsApplied >= 0 ? '#4ddb8c' : '#ff5d5d');
 
   run.popups.push({
     text: label,
-    sub: company.category,
+    sub,
     x: LANE_X[clampedLane],
     y: RAFT_Y - 40,
     life: 1.1,
     color,
+    strike: dodged,
   });
 
   createSplash(LANE_X[clampedLane], RAFT_Y - 20, color, dodged ? 10 : 14);
@@ -624,7 +626,19 @@ function drawPopups() {
     ctx.fillStyle = p.color;
     ctx.font = 'bold 20px -apple-system, sans-serif';
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillText(p.text, p.x, p.y);
+
+    if (p.strike) {
+      const textWidth = ctx.measureText(p.text).width;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(p.x - textWidth / 2 - 3, p.y);
+      ctx.lineTo(p.x + textWidth / 2 + 3, p.y);
+      ctx.stroke();
+    }
+
     if (p.sub) {
       ctx.font = '13px -apple-system, sans-serif';
       ctx.fillStyle = '#c9dbe8';
