@@ -270,8 +270,8 @@ label[for="player-name"] {
 }
 
 .lb-row .lb-name {
-  left: 24%;
-  width: 38%;
+  left: 29%;
+  width: 34%;
   text-align: left;
   background: transparent;
 }
@@ -280,7 +280,7 @@ label[for="player-name"] {
   left: 65%;
   width: 18%;
   text-align: center;
-  background: #e6cc9c;
+  background: transparent;
 }
 
 /* Empty rank slots (no leaderboard entry yet): mask the baked-in underscore

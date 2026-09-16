@@ -28,7 +28,7 @@ const GATE_APPROACH_WINDOWS = GATE_INTERVALS.map((iv) => Math.min(APPROACH_WINDO
 const START_SCORE = 1000;
 const STEER_LERP = 10; // higher = snappier smoothing toward target lane
 const DODGE_DURATION = 1;
-const DODGE_COOLDOWN = 1.5;
+const DODGE_COOLDOWN = 0.5;
 
 // Vertical position (% of the leaderboard image's own box) of each rank row's
 // blank line, read off assets/ui/Leaderboard.jpeg. The baked artwork already
@@ -501,7 +501,7 @@ function drawRiverBackground() {
 
   const scrollOffset = (run.t * 70) % 42;
   riverBanks.forEach((node) => {
-    const y = node.y - scrollOffset;
+    const y = node.y + scrollOffset;
     // Perspective taper: banks narrow toward the horizon, widen toward the raft.
     const t = Math.max(0, Math.min(1, (y - GATE_SPAWN_Y) / (PERSPECTIVE_BASE_Y - GATE_SPAWN_Y)));
     const margin = BANK_MARGIN_HORIZON + (BANK_MARGIN - BANK_MARGIN_HORIZON) * t;
@@ -556,12 +556,8 @@ function drawGates() {
     if (timeToGate > gate.approachWindow || timeToGate < -0.05) continue;
 
     const progress = 1 - Math.max(0, timeToGate) / gate.approachWindow;
-    // Ease in: real perspective growth is slow-then-fast as distance closes,
-    // not linear — linear growth reads as "flying at you" instead of "you're
-    // approaching a stationary object."
-    const eased = progress * progress;
-    const y = GATE_SPAWN_Y + (RAFT_Y - 90 - GATE_SPAWN_Y) * eased;
-    const scale = 0.2 + 0.8 * eased;
+    const y = GATE_SPAWN_Y + (RAFT_Y - 90 - GATE_SPAWN_Y) * progress;
+    const scale = 1;
 
     gate.companies.forEach((company, lane) => {
       // Company items stay in their own fixed lane the whole time — only the
@@ -794,7 +790,7 @@ function drawHud() {
 // Local copy always kept (and used as-is if no backend is configured, or if
 // the network call fails). Paste a deployed Apps Script Web App /exec URL
 // below to also read/write a shared, permanent leaderboard.
-const LEADERBOARD_API_URL = '';
+const LEADERBOARD_API_URL = 'https://script.google.com/a/macros/personio.de/s/AKfycby5O1s0FDYZal74vJJHVkWDiaQW7FLiSj1mzvigb3HJp0_s9wc_b7hHsBGgTtFi6Q/exec';
 
 function loadLocalLeaderboard() {
   try {
