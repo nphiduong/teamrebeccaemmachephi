@@ -7,9 +7,9 @@ const RAFT_Y = 620;
 const GATE_SPAWN_Y = 70;
 const APPROACH_WINDOW = 3.2; // seconds a gate is visible before it resolves
 
-// Arithmetic sequence of 8 round-intervals starting at 6s and shrinking by 0.5s
-// each round (6 -> 2.5), so the run visibly speeds up toward the end.
-const GATE_TIMES = [6, 11.5, 16.5, 21, 25, 28.5, 31.5, 34];
+// Arithmetic sequence of 10 round-intervals starting at 5s and shrinking by 0.5s
+// each round (5 -> 0.5), so the run visibly speeds up toward the end.
+const GATE_TIMES = [5, 9.5, 13.5, 17, 20, 22.5, 24.5, 26, 27, 27.5];
 const TOTAL_GATES = GATE_TIMES.length;
 const RUN_DURATION = GATE_TIMES[TOTAL_GATES - 1];
 // Per-gate visibility window: never longer than the gap since the previous gate
