@@ -258,17 +258,20 @@ label[for="player-name"] {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: #e6cc9c;
+  padding: 3px 6px;
+  border-radius: 3px;
 }
 
 .lb-row .lb-name {
   left: 31%;
-  width: 40%;
+  width: 33%;
   text-align: left;
 }
 
 .lb-row .lb-score {
-  left: 72%;
-  width: 17%;
+  left: 65%;
+  width: 18%;
   text-align: center;
 }
 
