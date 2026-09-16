@@ -20,10 +20,8 @@ function perspectiveX(baseX, y) {
   return CENTER_X + (baseX - CENTER_X) * t;
 }
 
-// 12 round-intervals: shrinks by 0.5s each round from 5s down to 2s (rounds 1-7),
-// then tapers 1.5 -> 1.25 -> 1 -> 0.75 -> 0.75 (rounds 8-12) so the ending doesn't
-// get too short to react to.
-const ROUND_DURATIONS = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1.25, 1, 0.75, 0.75];
+// 12 round-intervals: starts at 4s and shrinks by 0.25s each round (4 -> 1.25).
+const ROUND_DURATIONS = [4, 3.75, 3.5, 3.25, 3, 2.75, 2.5, 2.25, 2, 1.75, 1.5, 1.25];
 const GATE_TIMES = ROUND_DURATIONS.reduce((acc, d, i) => {
   acc.push(d + (i === 0 ? 0 : acc[i - 1]));
   return acc;
@@ -153,6 +151,13 @@ let raftSpriteReady = false;
 raftSprite.onload = () => { raftSpriteReady = true; };
 raftSprite.onerror = () => { console.warn('raft sprite failed to load, using procedural fallback'); };
 raftSprite.src = 'assets/characters/shandalf-paddle-2.png';
+
+// ---- Gate-item raft (each lane's floating item: this raft shape with the
+// company's logo composited onto its deck, moving together as one sprite) ----
+const cargoRaftSprite = new Image();
+let cargoRaftReady = false;
+cargoRaftSprite.onload = () => { cargoRaftReady = true; };
+cargoRaftSprite.src = 'assets/characters/raft.svg';
 
 // ---- Audio synth (Web Audio oscillators; no sound assets) ----
 let audioCtx = null;
@@ -545,45 +550,59 @@ function drawGates() {
     const scale = 0.55 + 0.45 * progress;
 
     gate.companies.forEach((company, lane) => {
-      drawCompanyCard(perspectiveX(LANE_X[lane], y), y, company, scale);
+      // Company items stay in their own fixed lane the whole time — only the
+      // lane dividers/riverbanks use the vanishing-point perspective, not these.
+      drawCompanyCard(LANE_X[lane], y, company, scale);
     });
   }
 }
 
+// Deck area of raft.svg as fractions of its own box (read off the 32x32 viewBox:
+// deck planks span x=6..26, y=10..21) — the logo gets composited into this rect
+// so it sits "on" the raft rather than floating over unrelated pixels.
+const RAFT_DECK_RECT = { x: 6 / 32, y: 10 / 32, w: 20 / 32, h: 11 / 32 };
+
 function drawCompanyCard(x, y, company, scale) {
-  const w = 230 * scale;
-  const h = 74 * scale;
+  const size = 150 * scale; // raft.svg is square (32x32 viewBox)
   ctx.save();
   ctx.translate(x, y);
-  ctx.fillStyle = '#0f2839';
-  ctx.strokeStyle = '#3d7a9e';
-  ctx.lineWidth = 2;
-  roundRect(ctx, -w / 2, -h / 2, w, h, 10 * scale);
-  ctx.fill();
-  ctx.stroke();
+
+  if (cargoRaftReady) {
+    ctx.drawImage(cargoRaftSprite, -size / 2, -size / 2, size, size);
+  } else {
+    ctx.fillStyle = '#0f2839';
+    ctx.strokeStyle = '#3d7a9e';
+    ctx.lineWidth = 2;
+    roundRect(ctx, -size / 2, -size / 2, size, size, 10 * scale);
+    ctx.fill();
+    ctx.stroke();
+  }
 
   const logo = company.logo;
   const logoReady = logo && logo.ready;
-
-  ctx.fillStyle = '#eaf2f8';
-  ctx.textBaseline = 'middle';
-
   if (logoReady) {
-    const pad = 10 * scale;
-    const logoSize = Math.min(h - 2 * pad, 54 * scale);
-    const logoLeft = -w / 2 + pad;
-    ctx.drawImage(logo, logoLeft, -logoSize / 2, logoSize, logoSize);
+    const deckX = -size / 2 + RAFT_DECK_RECT.x * size;
+    const deckY = -size / 2 + RAFT_DECK_RECT.y * size;
+    const deckW = RAFT_DECK_RECT.w * size;
+    const deckH = RAFT_DECK_RECT.h * size;
 
-    const textX = logoLeft + logoSize + pad;
-    const textWidth = (w / 2 - pad) - textX;
-    ctx.textAlign = 'left';
-    ctx.font = `${Math.max(12, 15 * scale)}px -apple-system, sans-serif`;
-    wrapText(ctx, company.name, textX, 0, textWidth, 15 * scale);
-  } else {
-    ctx.textAlign = 'center';
-    ctx.font = `${Math.max(12, 16 * scale)}px -apple-system, sans-serif`;
-    wrapText(ctx, company.name, 0, 0, w - 16, 16 * scale);
+    const logoAspect = (logo.naturalWidth && logo.naturalHeight) ? logo.naturalWidth / logo.naturalHeight : 1;
+    let lw = deckW * 0.9;
+    let lh = lw / logoAspect;
+    if (lh > deckH * 0.9) {
+      lh = deckH * 0.9;
+      lw = lh * logoAspect;
+    }
+    ctx.drawImage(logo, deckX + (deckW - lw) / 2, deckY + (deckH - lh) / 2, lw, lh);
   }
+
+  // Company name caption below the raft
+  ctx.fillStyle = '#eaf2f8';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = `${Math.max(11, 13 * scale)}px -apple-system, sans-serif`;
+  wrapText(ctx, company.name, 0, size / 2 + 12 * scale, size * 1.4, 14 * scale);
+
   ctx.restore();
 }
 
