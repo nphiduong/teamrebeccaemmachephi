@@ -48,6 +48,21 @@ function initRiverBackground() {
   }
 }
 
+// ---- Company logos (placeholder pool: only a couple of real logos exist so far, assigned
+// randomly per card until every company has its own matching logo asset). ----
+const LOGO_FILES = ['Adobe.png', 'Apple.png'];
+const logoImages = LOGO_FILES.map((file) => {
+  const img = new Image();
+  img.ready = false;
+  img.onload = () => { img.ready = true; };
+  img.src = `assets/logos/${file}`;
+  return img;
+});
+
+function randomLogo() {
+  return logoImages[Math.floor(Math.random() * logoImages.length)];
+}
+
 // ---- Raft sprite (real art asset; falls back to procedural pixel raft if it can't load) ----
 const raftSprite = new Image();
 let raftSpriteReady = false;
@@ -119,14 +134,13 @@ const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 const screens = {
   title: document.getElementById('screen-title'),
-  setup: document.getElementById('screen-setup'),
   results: document.getElementById('screen-results'),
 };
 const nameInput = document.getElementById('player-name');
 const characterButtons = Array.from(document.querySelectorAll('.character-option'));
 
 // ---- Global state ----
-let appState = 'TITLE'; // TITLE | SETUP | PLAY | RESULTS
+let appState = 'TITLE'; // TITLE | PLAY | RESULTS
 let selectedCharacter = 0;
 let playerName = '';
 
@@ -158,7 +172,8 @@ function buildRun() {
       }
     }
 
-    gates.push({ time: GATE_TIMES[g], companies: picks, resolved: false });
+    const companiesWithLogos = picks.map((c) => ({ ...c, logo: randomLogo() }));
+    gates.push({ time: GATE_TIMES[g], companies: companiesWithLogos, resolved: false });
   }
   return gates;
 }
@@ -196,10 +211,6 @@ function showScreen(name) {
 
 function goTitle() {
   showScreen('title');
-}
-
-function goSetup() {
-  showScreen('setup');
   nameInput.focus();
 }
 
@@ -235,8 +246,7 @@ document.addEventListener('keydown', (e) => {
   }
 
   if (e.code === 'Enter') {
-    if (appState === 'TITLE') goSetup();
-    else if (appState === 'SETUP') startRun();
+    if (appState === 'TITLE') startRun();
     else if (appState === 'RESULTS') goTitle();
     return;
   }
@@ -256,7 +266,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-screens.title.addEventListener('click', () => { if (appState === 'TITLE') goSetup(); });
 document.getElementById('play-again-btn').addEventListener('click', () => { if (appState === 'RESULTS') goTitle(); });
 
 characterButtons.forEach((btn) => {
@@ -436,12 +445,12 @@ function drawGates() {
     const scale = 0.55 + 0.45 * progress;
 
     gate.companies.forEach((company, lane) => {
-      drawCompanyCard(LANE_X[lane], y, company.name, scale);
+      drawCompanyCard(LANE_X[lane], y, company, scale);
     });
   }
 }
 
-function drawCompanyCard(x, y, name, scale) {
+function drawCompanyCard(x, y, company, scale) {
   const w = 200 * scale;
   const h = 74 * scale;
   ctx.save();
@@ -453,11 +462,25 @@ function drawCompanyCard(x, y, name, scale) {
   ctx.fill();
   ctx.stroke();
 
+  const logo = company.logo;
+  const logoReady = logo && logo.ready;
+
   ctx.fillStyle = '#eaf2f8';
-  ctx.font = `${Math.max(12, 16 * scale)}px -apple-system, sans-serif`;
   ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  wrapText(ctx, name, 0, 0, w - 16, 16 * scale);
+
+  if (logoReady) {
+    const logoSize = Math.min(30 * scale, h * 0.5);
+    const logoTop = -h / 2 + 8 * scale;
+    ctx.drawImage(logo, -logoSize / 2, logoTop, logoSize, logoSize);
+
+    ctx.font = `${Math.max(11, 13 * scale)}px -apple-system, sans-serif`;
+    ctx.textBaseline = 'middle';
+    wrapText(ctx, company.name, 0, logoTop + logoSize + 12 * scale, w - 16, 13 * scale);
+  } else {
+    ctx.font = `${Math.max(12, 16 * scale)}px -apple-system, sans-serif`;
+    ctx.textBaseline = 'middle';
+    wrapText(ctx, company.name, 0, 0, w - 16, 16 * scale);
+  }
   ctx.restore();
 }
 
