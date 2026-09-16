@@ -1,0 +1,196 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #0a1620;
+  color: #eaf2f8;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+}
+
+#game-container {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  margin: 0 auto;
+  top: 50%;
+  transform: translateY(-50%);
+  max-width: 100vw;
+  max-height: 100vh;
+  aspect-ratio: 1280 / 720;
+}
+
+@media (max-width: 1280px) {
+  #game-container {
+    width: 100vw;
+    height: calc(100vw * 720 / 1280);
+  }
+}
+
+#game-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #133046;
+  display: none;
+}
+
+body.state-play #game-canvas { display: block; }
+
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px;
+}
+
+.screen.active {
+  display: flex;
+}
+
+h1 {
+  font-size: 64px;
+  letter-spacing: 4px;
+  margin: 0 0 12px;
+  color: #7fd8ff;
+  text-shadow: 0 0 20px rgba(127, 216, 255, 0.5);
+}
+
+h2 {
+  font-size: 36px;
+  margin: 0 0 24px;
+}
+
+.pitch {
+  font-size: 20px;
+  color: #b7cbdb;
+  max-width: 640px;
+  margin: 0 0 48px;
+}
+
+.prompt {
+  font-size: 18px;
+  color: #ffd76a;
+  letter-spacing: 1px;
+}
+
+.pulsing {
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+#player-name {
+  font-size: 20px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 2px solid #2c5570;
+  background: #0f2130;
+  color: #eaf2f8;
+  width: 280px;
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+#player-name:focus {
+  outline: none;
+  border-color: #7fd8ff;
+}
+
+.section-label {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #8fa8ba;
+  margin-bottom: 16px;
+}
+
+#character-select {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 48px;
+}
+
+.character-option {
+  background: #0f2130;
+  border: 3px solid #2c5570;
+  border-radius: 12px;
+  padding: 16px 20px;
+  color: #eaf2f8;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  transition: border-color 0.15s ease;
+}
+
+.character-option.selected {
+  border-color: #7fd8ff;
+  box-shadow: 0 0 16px rgba(127, 216, 255, 0.35);
+}
+
+.character-swatch {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: block;
+}
+
+.swatch-0 { background: #4da8ff; }
+.swatch-1 { background: #ff5d5d; }
+.swatch-2 { background: #4ddb8c; }
+
+.results-score {
+  font-size: 56px;
+  font-weight: bold;
+  color: #7fd8ff;
+  margin: 0 0 8px;
+}
+
+#results-meta {
+  color: #b7cbdb;
+  margin-bottom: 28px;
+}
+
+#leaderboard-table {
+  border-collapse: collapse;
+  width: 420px;
+  margin-bottom: 32px;
+}
+
+#leaderboard-table th, #leaderboard-table td {
+  padding: 6px 14px;
+  text-align: left;
+  border-bottom: 1px solid #1e3a4f;
+  font-size: 15px;
+}
+
+#leaderboard-table th {
+  color: #8fa8ba;
+  font-weight: normal;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+#leaderboard-table tr.is-you td {
+  color: #ffd76a;
+  font-weight: bold;
+}

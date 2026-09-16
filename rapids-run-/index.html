@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rapids Run</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-container">
+  <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+  <section id="screen-title" class="screen active">
+    <h1>RAPIDS RUN</h1>
+    <p class="pitch">Steer the rapids. Bank the clean tech giants. Dodge the PR disasters.</p>
+    <p class="prompt pulsing">Press ENTER to play</p>
+  </section>
+
+  <section id="screen-setup" class="screen">
+    <h2>Who's running the rapids?</h2>
+    <label for="player-name">Your name</label>
+    <input id="player-name" type="text" maxlength="16" placeholder="Anonymous" autocomplete="off">
+
+    <p class="section-label">Choose your rafter</p>
+    <div id="character-select">
+      <button class="character-option selected" data-character="0">
+        <span class="character-swatch swatch-0"></span>
+        <span>Blue Rafter</span>
+      </button>
+      <button class="character-option" data-character="1">
+        <span class="character-swatch swatch-1"></span>
+        <span>Red Rafter</span>
+      </button>
+      <button class="character-option" data-character="2">
+        <span class="character-swatch swatch-2"></span>
+        <span>Green Rafter</span>
+      </button>
+    </div>
+
+    <p class="prompt pulsing">Press ENTER to start</p>
+  </section>
+
+  <section id="screen-results" class="screen">
+    <h2 id="results-headline">Run Complete</h2>
+    <p id="results-score" class="results-score">0</p>
+    <p id="results-meta"></p>
+
+    <table id="leaderboard-table">
+      <thead>
+        <tr><th>Rank</th><th>Name</th><th>Score</th></tr>
+      </thead>
+      <tbody id="leaderboard-body"></tbody>
+    </table>
+
+    <button id="play-again-btn" class="prompt pulsing" style="cursor:pointer;background:none;border:none;">Press ENTER to play again</button>
+  </section>
+</div>
+<script src="companies.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
