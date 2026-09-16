@@ -48,14 +48,21 @@ function initRiverBackground() {
   }
 }
 
-// ---- Company logos (placeholder pool: only a couple of real logos exist so far, assigned
-// randomly per card until every company has its own matching logo asset). ----
-const LOGO_FILES = ['Adobe.png', 'Apple.png'];
+// ---- Company logos (placeholder pool: only some companies have real logo assets so far,
+// assigned randomly per card until every company has its own matching logo asset). ----
+const LOGO_FILES = [
+  'Adobe.png',
+  'Apple.png',
+  'Google (Alphabet).png',
+  'Microsoft.png',
+  'SAP.png',
+  'Salesforce.png',
+];
 const logoImages = LOGO_FILES.map((file) => {
   const img = new Image();
   img.ready = false;
   img.onload = () => { img.ready = true; };
-  img.src = `assets/logos/${file}`;
+  img.src = `assets/logos/${encodeURIComponent(file)}`;
   return img;
 });
 
@@ -137,11 +144,10 @@ const screens = {
   results: document.getElementById('screen-results'),
 };
 const nameInput = document.getElementById('player-name');
-const characterButtons = Array.from(document.querySelectorAll('.character-option'));
 
 // ---- Global state ----
 let appState = 'TITLE'; // TITLE | PLAY | RESULTS
-let selectedCharacter = 0;
+let selectedCharacter = 0; // character selection UI is paused for now; always Blue Rafter
 let playerName = '';
 
 let run = null; // built when a PLAY run starts
@@ -268,13 +274,6 @@ document.addEventListener('keydown', (e) => {
 
 document.getElementById('play-again-btn').addEventListener('click', () => { if (appState === 'RESULTS') goTitle(); });
 
-characterButtons.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    selectedCharacter = Number(btn.dataset.character);
-    characterButtons.forEach(b => b.classList.toggle('selected', b === btn));
-  });
-});
-
 // ---- Game loop ----
 let lastFrameTime = 0;
 
@@ -391,8 +390,8 @@ function render() {
 
 function drawRiverBackground() {
   const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
-  grad.addColorStop(0, '#0d2c40');
-  grad.addColorStop(1, '#1c4b66');
+  grad.addColorStop(0, '#2f86c9');
+  grad.addColorStop(1, '#145a94');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
@@ -402,15 +401,24 @@ function drawRiverBackground() {
     const leftW = BANK_MARGIN + sway;
     const rightW = BANK_MARGIN - sway;
     const y = node.y - scrollOffset;
-    ctx.fillStyle = '#123a2a';
+
+    // Grass
+    ctx.fillStyle = '#2f7d3a';
     ctx.fillRect(0, y, leftW, 38);
     ctx.fillRect(CANVAS_W - rightW, y, rightW, 38);
-    ctx.fillStyle = '#1a5138';
-    ctx.fillRect(leftW - 4, y, 4, 38);
-    ctx.fillRect(CANVAS_W - rightW, y, 4, 38);
+
+    // Sunlit grass edge
+    ctx.fillStyle = '#4bab52';
+    ctx.fillRect(0, y, leftW, 7);
+    ctx.fillRect(CANVAS_W - rightW, y, rightW, 7);
+
+    // Dirt bank trim at the waterline
+    ctx.fillStyle = '#8a5a34';
+    ctx.fillRect(leftW - 6, y, 6, 38);
+    ctx.fillRect(CANVAS_W - rightW, y, 6, 38);
   });
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
   ctx.lineWidth = 2;
   rippleStreaks.forEach((r) => {
     ctx.beginPath();
@@ -451,7 +459,7 @@ function drawGates() {
 }
 
 function drawCompanyCard(x, y, company, scale) {
-  const w = 200 * scale;
+  const w = 230 * scale;
   const h = 74 * scale;
   ctx.save();
   ctx.translate(x, y);
@@ -466,19 +474,22 @@ function drawCompanyCard(x, y, company, scale) {
   const logoReady = logo && logo.ready;
 
   ctx.fillStyle = '#eaf2f8';
-  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
   if (logoReady) {
-    const logoSize = Math.min(30 * scale, h * 0.5);
-    const logoTop = -h / 2 + 8 * scale;
-    ctx.drawImage(logo, -logoSize / 2, logoTop, logoSize, logoSize);
+    const pad = 10 * scale;
+    const logoSize = Math.min(h - 2 * pad, 54 * scale);
+    const logoLeft = -w / 2 + pad;
+    ctx.drawImage(logo, logoLeft, -logoSize / 2, logoSize, logoSize);
 
-    ctx.font = `${Math.max(11, 13 * scale)}px -apple-system, sans-serif`;
-    ctx.textBaseline = 'middle';
-    wrapText(ctx, company.name, 0, logoTop + logoSize + 12 * scale, w - 16, 13 * scale);
+    const textX = logoLeft + logoSize + pad;
+    const textWidth = (w / 2 - pad) - textX;
+    ctx.textAlign = 'left';
+    ctx.font = `${Math.max(12, 15 * scale)}px -apple-system, sans-serif`;
+    wrapText(ctx, company.name, textX, 0, textWidth, 15 * scale);
   } else {
+    ctx.textAlign = 'center';
     ctx.font = `${Math.max(12, 16 * scale)}px -apple-system, sans-serif`;
-    ctx.textBaseline = 'middle';
     wrapText(ctx, company.name, 0, 0, w - 16, 16 * scale);
   }
   ctx.restore();

@@ -77,9 +77,7 @@ body.state-play #crt-overlay { display: block; }
 }
 
 #screen-title {
-  background-image:
-    linear-gradient(rgba(5, 12, 20, 0.35), rgba(5, 12, 20, 0.8)),
-    url('assets/ui/Title_screen_final.jpeg');
+  background-image: url('assets/ui/Title_screen_final.jpeg');
   background-size: cover;
   background-position: center;
 }
