@@ -48,6 +48,13 @@ function initRiverBackground() {
   }
 }
 
+// ---- Raft sprite (real art asset; falls back to procedural pixel raft if it can't load) ----
+const raftSprite = new Image();
+let raftSpriteReady = false;
+raftSprite.onload = () => { raftSpriteReady = true; };
+raftSprite.onerror = () => { console.warn('raft sprite failed to load, using procedural fallback'); };
+raftSprite.src = 'assets/characters/shandalf-paddle-2.png';
+
 // ---- Audio synth (Web Audio oscillators; no sound assets) ----
 let audioCtx = null;
 
@@ -484,18 +491,32 @@ function roundRect(context, x, y, w, h, r) {
 
 function drawRaft() {
   const isDodging = run.dodgeTimer > 0;
-  const scale = 1.6 * (isDodging ? 1.15 : 1);
   const tilt = run.tilt || 0;
-  const paddleFrame = run.paddleAnim;
-  const shirt = CHARACTERS[selectedCharacter].color;
-  const cap = CHARACTERS[selectedCharacter].accent;
-  const paddleOffset = Math.sin(paddleFrame) * 6;
+  const baseScale = raftSpriteReady ? 1 : 1.6;
+  const scale = baseScale * (isDodging ? 1.15 : 1);
 
   ctx.save();
   ctx.translate(run.raftX, RAFT_Y);
   ctx.scale(scale, scale);
   ctx.rotate((tilt * 6 * Math.PI) / 180);
   if (isDodging) ctx.globalAlpha = 0.8;
+
+  if (raftSpriteReady) {
+    const w = 108;
+    const h = w * (raftSprite.naturalHeight / raftSprite.naturalWidth);
+    ctx.drawImage(raftSprite, -w / 2, -h / 2 + 8, w, h);
+  } else {
+    drawProceduralRaft();
+  }
+
+  ctx.restore();
+}
+
+function drawProceduralRaft() {
+  const paddleFrame = run.paddleAnim;
+  const shirt = CHARACTERS[selectedCharacter].color;
+  const cap = CHARACTERS[selectedCharacter].accent;
+  const paddleOffset = Math.sin(paddleFrame) * 6;
 
   // Wooden raft logs
   ctx.fillStyle = '#5c3a21';
@@ -539,8 +560,6 @@ function drawRaft() {
   ctx.fillRect(19, -10 - paddleOffset, 3, 28);
   ctx.fillStyle = '#b45309';
   ctx.fillRect(17, 15 - paddleOffset, 7, 10);
-
-  ctx.restore();
 }
 
 function drawSplashes() {
