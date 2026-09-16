@@ -7,6 +7,19 @@ const RAFT_Y = 620;
 const GATE_SPAWN_Y = 70;
 const APPROACH_WINDOW = 3.2; // seconds a gate is visible before it resolves
 
+// ---- Low-angle rear-view perspective ----
+// Lanes converge to a single vanishing point (CENTER_X, GATE_SPAWN_Y) and reach
+// full LANE_X spread at PERSPECTIVE_BASE_Y (where gate cards arrive). Anything
+// drawn at a given y — gate cards, lane dividers, riverbanks — shares this one
+// formula so the whole scene reads as one consistent rear-view perspective.
+const CENTER_X = CANVAS_W / 2;
+const PERSPECTIVE_BASE_Y = RAFT_Y - 90;
+
+function perspectiveX(baseX, y) {
+  const t = (y - GATE_SPAWN_Y) / (PERSPECTIVE_BASE_Y - GATE_SPAWN_Y);
+  return CENTER_X + (baseX - CENTER_X) * t;
+}
+
 // 12 round-intervals: shrinks by 0.5s each round from 5s down to 2s (rounds 1-7),
 // then tapers 1.5 -> 1.25 -> 1 -> 0.75 -> 0.75 (rounds 8-12) so the ending doesn't
 // get too short to react to.
@@ -64,32 +77,60 @@ function initRiverBackground() {
   }
 }
 
-// ---- Company logos (real per-company matches only; a company with no matching
-// asset in assets/logos/ just shows its name, no logo). ----
+// ---- Company logos (real per-company matches; every company in companies.js
+// currently has one, but this stays a lookup — not a filename convention — so a
+// future company with no matching asset just shows its name, no logo). ----
 const COMPANY_LOGO_FILES = {
   'Anthropic': 'Anthropic.png',
   'Personio': 'Personio.png',
-  'Apple': 'Apple.png',
+  'Apple': 'apple.svg',
   'Microsoft': 'Microsoft.png',
   'Nvidia': 'Nvidia.png',
-  'Spotify': 'spotify.png',
+  'Stripe': 'Stripe.png',
+  'Spotify': 'Spotify.png',
   'Costco': 'Costco.png',
-  'Patagonia': 'patagonia.png',
+  'Patagonia': 'Patagonia.png',
+  'Berkshire Hathaway': 'Berkshire Hathaway.png',
   'Salesforce': 'Salesforce.png',
   'Google (Alphabet)': 'Google (Alphabet).png',
   'ASML': 'ASML.png',
-  'Visa': 'visa.jpg',
-  'Novo Nordisk': 'novo nordisk.png',
+  'Shopify': 'Shopify.png',
+  'Figma': 'Figma.jpeg',
+  'Databricks': 'Databricks.png',
+  'Canva': 'Canva.jpeg',
+  'Duolingo': 'Duolingo.jpg',
+  'OpenAI': 'OpenAI.jpg',
+  'Visa': 'Visa.jpg',
+  'Novo Nordisk': 'Novo Nordisk.png',
   'Siemens': 'Siemens.jpg',
+  'Hubspot': 'Hubspot.jpeg',
+  'AirBnB': 'AirBnB.png',
   'Lego': 'LEGO.png',
-  'Wirecard': 'wirecard.png',
+  'Wirecard': 'Wirecard.png',
   'Enron': 'Enron.png',
-  'Lehman Brothers': 'lehman brothers.png',
-  'FTX': 'ftx.png',
+  'Lehman Brothers': 'Lehman Brothers.png',
+  'FTX': 'FTX.png',
   'Theranos': 'Theranos.png',
-  'Bernie Madoff Investment': 'Bernie Madoff Investment Securities.jpg',
-  'WorldCom': 'worldcom.png',
+  'WeWork': 'WeWork.jpg',
+  'Bernie Madoff Investment': 'Bernie Madoff Investment.jpg',
+  'WorldCom': 'WorldCom.png',
   'Parmalat': 'Parmalat.png',
+  'Luckin Coffee': 'Luckin Coffee.png',
+  'SVB (Silicon Valley Bank)': 'SVB (Silicon Valley Bank).jpeg',
+  'Credit Suisse': 'Credit Suisse.png',
+  'Tyco': 'Tyco.png',
+  'HealthSouth': 'HealthSouth.png',
+  'Bear Stearns': 'Bear Stearns.jpg',
+  'Greensill Capital': 'Greensill Capital.jpg',
+  'OneCoin': 'OneCoin.jpg',
+  'Washington Mutual': 'Washington Mutual.png',
+  'Nikola Motors': 'Nikola Motors.png',
+  'Lordstown Motors': 'Lordstown Motors.jpg',
+  'Sears': 'Sears.jpg',
+  'BlockFi': 'BlockFi.png',
+  'Celsius Network': 'Celsius Network.png',
+  'Carillion': 'Carillion.jpg',
+  'Thomas Cook': 'Thomas Cook.png',
 };
 
 const logoImageCache = {};
@@ -388,7 +429,7 @@ function resolveGate(gate) {
     ? `${company.points} ${company.name}`
     : `${pointsApplied > 0 ? '+' : ''}${pointsApplied} ${company.name}`;
   const sub = dodged ? `DODGED — ${company.category}` : company.category;
-  const color = dodged ? '#ffd76a' : (pointsApplied >= 0 ? '#4ddb8c' : '#ff5d5d');
+  const color = dodged ? '#ffd700' : (pointsApplied >= 0 ? '#00ff66' : '#ff3333');
 
   run.popups.push({
     text: label,
@@ -431,37 +472,42 @@ function render() {
   drawPopups();
 }
 
+const BANK_MARGIN_HORIZON = 40; // riverbank width right at the vanishing point
+
 function drawRiverBackground() {
   const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
-  grad.addColorStop(0, '#2f86c9');
-  grad.addColorStop(1, '#145a94');
+  grad.addColorStop(0, '#0077be');
+  grad.addColorStop(1, '#1a5b8c');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
   const scrollOffset = (run.t * 70) % 42;
   riverBanks.forEach((node) => {
-    const sway = Math.sin(node.phase + run.t * 0.6) * BANK_SWAY;
-    const leftW = BANK_MARGIN + sway;
-    const rightW = BANK_MARGIN - sway;
     const y = node.y - scrollOffset;
+    // Perspective taper: banks narrow toward the horizon, widen toward the raft.
+    const t = Math.max(0, Math.min(1, (y - GATE_SPAWN_Y) / (PERSPECTIVE_BASE_Y - GATE_SPAWN_Y)));
+    const margin = BANK_MARGIN_HORIZON + (BANK_MARGIN - BANK_MARGIN_HORIZON) * t;
+    const sway = Math.sin(node.phase + run.t * 0.6) * BANK_SWAY * t;
+    const leftW = margin + sway;
+    const rightW = margin - sway;
 
     // Grass
-    ctx.fillStyle = '#2f7d3a';
+    ctx.fillStyle = '#2e8b57';
     ctx.fillRect(0, y, leftW, 38);
     ctx.fillRect(CANVAS_W - rightW, y, rightW, 38);
 
     // Sunlit grass edge
-    ctx.fillStyle = '#4bab52';
+    ctx.fillStyle = '#3cb371';
     ctx.fillRect(0, y, leftW, 7);
     ctx.fillRect(CANVAS_W - rightW, y, rightW, 7);
 
-    // Dirt bank trim at the waterline
+    // Warm earth-toned rocky trim at the waterline
     ctx.fillStyle = '#8a5a34';
     ctx.fillRect(leftW - 6, y, 6, 38);
     ctx.fillRect(CANVAS_W - rightW, y, 6, 38);
   });
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.35)';
   ctx.lineWidth = 2;
   rippleStreaks.forEach((r) => {
     ctx.beginPath();
@@ -472,17 +518,20 @@ function drawRiverBackground() {
 }
 
 function drawLaneDividers() {
-  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
   ctx.lineWidth = 3;
   ctx.setLineDash([18, 16]);
-  const scroll = (run.t * 220) % 34;
-  [480, 800].forEach((x) => {
+  ctx.lineDashOffset = -((run.t * 220) % 34);
+  // Boundaries between lanes, converging to the vanishing point at the horizon
+  // and diverging past the raft's row toward the bottom of the screen.
+  [480, 800].forEach((boundaryX) => {
     ctx.beginPath();
-    ctx.moveTo(x, -34 + scroll);
-    ctx.lineTo(x, CANVAS_H);
+    ctx.moveTo(perspectiveX(boundaryX, GATE_SPAWN_Y), GATE_SPAWN_Y);
+    ctx.lineTo(perspectiveX(boundaryX, CANVAS_H), CANVAS_H);
     ctx.stroke();
   });
   ctx.setLineDash([]);
+  ctx.lineDashOffset = 0;
 }
 
 function drawGates() {
@@ -496,7 +545,7 @@ function drawGates() {
     const scale = 0.55 + 0.45 * progress;
 
     gate.companies.forEach((company, lane) => {
-      drawCompanyCard(LANE_X[lane], y, company, scale);
+      drawCompanyCard(perspectiveX(LANE_X[lane], y), y, company, scale);
     });
   }
 }
@@ -681,7 +730,7 @@ function drawPopups() {
 
 function drawHud() {
   ctx.save();
-  ctx.fillStyle = '#eaf2f8';
+  ctx.fillStyle = '#ffd700';
   ctx.font = 'bold 22px -apple-system, sans-serif';
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
@@ -702,7 +751,7 @@ function drawHud() {
   } else {
     ctx.textAlign = 'left';
     ctx.font = '14px -apple-system, sans-serif';
-    ctx.fillStyle = '#ffd76a';
+    ctx.fillStyle = '#ffd700';
     ctx.fillText('Dodge ready (Space)', 24, 52);
   }
   ctx.restore();
