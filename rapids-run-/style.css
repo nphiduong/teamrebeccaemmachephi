@@ -76,6 +76,14 @@ body.state-play #crt-overlay { display: block; }
   display: flex;
 }
 
+#screen-title {
+  background-image:
+    linear-gradient(rgba(5, 12, 20, 0.35), rgba(5, 12, 20, 0.8)),
+    url('assets/ui/Gemini_Generated_Image_eiqew8eiqew8eiqe.jpeg');
+  background-size: cover;
+  background-position: center;
+}
+
 h1 {
   font-family: 'Press Start 2P', cursive, -apple-system, sans-serif;
   font-size: 38px;
