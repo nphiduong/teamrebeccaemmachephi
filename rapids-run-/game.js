@@ -7,11 +7,16 @@ const RAFT_Y = 620;
 const GATE_SPAWN_Y = 70;
 const APPROACH_WINDOW = 3.2; // seconds a gate is visible before it resolves
 
-const RUN_DURATION = 52;
-// Arithmetic sequence of 8 approach-intervals summing to 52s, decreasing
-// (8.6 -> 4.4) so the run visibly speeds up toward the end.
-const GATE_TIMES = [8.6, 16.6, 24.0, 30.8, 37.0, 42.6, 47.6, 52.0];
+// Arithmetic sequence of 8 round-intervals starting at 6s and shrinking by 0.75s
+// each round (6 -> 0.75), so the run visibly speeds up toward the end.
+const GATE_TIMES = [6, 11.25, 15.75, 19.5, 22.5, 24.75, 26.25, 27];
 const TOTAL_GATES = GATE_TIMES.length;
+const RUN_DURATION = GATE_TIMES[TOTAL_GATES - 1];
+// Per-gate visibility window: never longer than the gap since the previous gate
+// resolved, so consecutive gates can't render on top of each other once rounds
+// get shorter than APPROACH_WINDOW.
+const GATE_INTERVALS = GATE_TIMES.map((t, i) => t - (i === 0 ? 0 : GATE_TIMES[i - 1]));
+const GATE_APPROACH_WINDOWS = GATE_INTERVALS.map((iv) => Math.min(APPROACH_WINDOW, iv));
 
 const START_SCORE = 1000;
 const STEER_LERP = 10; // higher = snappier smoothing toward target lane
@@ -179,7 +184,12 @@ function buildRun() {
     }
 
     const companiesWithLogos = picks.map((c) => ({ ...c, logo: randomLogo() }));
-    gates.push({ time: GATE_TIMES[g], companies: companiesWithLogos, resolved: false });
+    gates.push({
+      time: GATE_TIMES[g],
+      approachWindow: GATE_APPROACH_WINDOWS[g],
+      companies: companiesWithLogos,
+      resolved: false,
+    });
   }
   return gates;
 }
@@ -446,9 +456,9 @@ function drawGates() {
   for (const gate of run.gates) {
     if (gate.resolved) continue;
     const timeToGate = gate.time - run.t;
-    if (timeToGate > APPROACH_WINDOW || timeToGate < -0.05) continue;
+    if (timeToGate > gate.approachWindow || timeToGate < -0.05) continue;
 
-    const progress = 1 - Math.max(0, timeToGate) / APPROACH_WINDOW;
+    const progress = 1 - Math.max(0, timeToGate) / gate.approachWindow;
     const y = GATE_SPAWN_Y + (RAFT_Y - 90 - GATE_SPAWN_Y) * progress;
     const scale = 0.55 + 0.45 * progress;
 
